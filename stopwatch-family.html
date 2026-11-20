@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>우리 가족 시계</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#fff7ec; --ink:#4a3426; --muted:#9a8272; --orange:#ff8a3d; --mint:#3ec9a7; --sky:#5aa9ff; --pink:#ff7aa2; --card:#fff; --line:#f3e3d0; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -64,6 +65,47 @@
   .fly { position:fixed; font-size:1.6rem; pointer-events:none; animation:fly 1.5s ease-out forwards; z-index:9; }
   @keyframes fly { to { transform:translate(var(--dx),var(--dy)) rotate(var(--rot)); opacity:0; } }
   @media (prefers-reduced-motion: reduce) { * { animation:none !important; } }
+  /* ---- v3: 몽글이 · 탭별 테마 · 하단 탭바 ---- */
+  body[data-tab=sw]    { --orange:#ff8a3d; --mb:#ffb870; --soft:#ffe9d6; }
+  body[data-tab=brush] { --orange:#19b99a; --mb:#7fe0c6; --soft:#d8f6ee; }
+  body[data-tab=talk]  { --orange:#4f9dff; --mb:#8fc2ff; --soft:#e0eeff; }
+  body[data-tab=relay] { --orange:#ff6b9a; --mb:#ff9db9; --soft:#ffe1ea; }
+  body[data-tab=home]  { --orange:#f0a800; --mb:#ffd86b; --soft:#fff2c4; }
+  body { font-family:"Jua","Segoe UI","Malgun Gothic",sans-serif; padding-bottom:104px; transition:background .6s;
+    background: radial-gradient(circle at 15% 0%, var(--soft), transparent 55%), radial-gradient(circle at 100% 30%, var(--soft), transparent 45%), var(--bg); }
+  body, button, input, select, b, h1, h2 { font-weight:400 !important; }
+  h1 { font-size:1.5rem; }
+  nav { position:fixed; bottom:0; left:0; right:0; width:100%; max-width:560px; margin:0 auto; padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    background:rgba(255,255,255,.92); backdrop-filter:blur(10px); border-radius:26px 26px 0 0; box-shadow:0 -6px 24px rgba(120,70,20,.12); z-index:5; }
+  nav button { background:transparent; font-family:inherit; font-size:.8rem; padding:6px 0; transition:transform .2s; }
+  nav button.on { background:var(--soft); color:var(--orange); box-shadow:none; }
+  nav button.on b { animation:hop .5s; }
+  @keyframes hop { 30% { transform:translateY(-8px) scale(1.2); } }
+  .btn { background:var(--orange); box-shadow:0 5px 0 rgba(0,0,0,.18); font-family:inherit; font-size:1.1rem; }
+  .btn:active:not(:disabled) { transform:translateY(4px); box-shadow:0 1px 0 rgba(0,0,0,.18); }
+  .btn.mint { background:var(--orange); } .btn.sky { background:var(--soft); color:var(--orange); box-shadow:0 5px 0 rgba(0,0,0,.1); }
+  .btn.ghost { box-shadow:0 5px 0 rgba(0,0,0,.08); }
+  .chip.on { background:var(--soft); border-color:var(--orange); }
+  .card { border-radius:30px; border:3px solid var(--soft); }
+  .bubble { display:inline-block; background:var(--soft); border-radius:18px; padding:8px 16px; margin-bottom:10px; position:relative; animation:pop .35s; }
+  .bubble::after { content:""; position:absolute; left:50%; bottom:-8px; margin-left:-8px; border:8px solid transparent; border-bottom:0; border-top-color:var(--soft); }
+  @keyframes pop { from { transform:scale(.7); opacity:0; } }
+  .mas { width:150px; margin:0 auto; cursor:pointer; user-select:none; }
+  .mas svg { width:100%; display:block; overflow:visible; }
+  .mas .bd, .mas .ear { fill:var(--mb); } .mas .ein { fill:#ffc2cf; } .mas .belly { fill:#fff8ec; } .mas .cheek { fill:#ff9db5; opacity:.7; }
+  .mas .eo, .mas .ec, .mas .eh, .mas .ms, .mas .mb2, .mas .mo, .mas .zzz, .mas .sweat { display:none; }
+  .mas[data-mood=idle] :is(.ec,.mo,.zzz), .mas[data-mood=run] :is(.eo,.ms), .mas[data-mood=cheer] :is(.eh,.mb2), .mas[data-mood=pause] :is(.eo,.mo,.sweat) { display:block; }
+  .mas .mbody { transform-box:fill-box; transform-origin:50% 100%; }
+  .mas[data-mood=idle] .mbody { animation:breathe 3s infinite ease-in-out; }
+  .mas[data-mood=run] .mbody { animation:bounce .5s infinite alternate ease-in-out; }
+  .mas[data-mood=cheer] .mbody { animation:jump .5s 3; }
+  .mas:active .mbody { transform:scale(.92); }
+  @keyframes breathe { 50% { transform:scale(1.04,.97); } }
+  @keyframes bounce { to { transform:translateY(-12px) scale(.97,1.04); } }
+  @keyframes jump { 50% { transform:translateY(-26px) rotate(6deg); } }
+  .zzz { font-size:24px; fill:#8a7a9a; animation:bounce 1.2s infinite alternate; }
+  .laps li { }
+  #swLaps li { border-radius:14px; background:var(--soft); margin-bottom:6px; padding:8px 14px; border:0; }
 </style>
 </head>
 <body>
@@ -136,7 +178,22 @@
 <!-- 기본 스탑워치 -->
 <section id="p-sw" class="pane">
   <div class="card center">
-    <h2>기본 스탑워치</h2>
+    <div class="bubble" id="swBubble">나를 눌러서 시작해요! 👆</div>
+    <div class="mas" id="swMas" data-mood="idle" role="button" aria-label="몽글이를 눌러 시작/정지">
+      <svg viewBox="0 0 200 200"><g class="mbody">
+        <ellipse class="ear" cx="62" cy="42" rx="16" ry="30" transform="rotate(-12 62 42)"/><ellipse class="ear" cx="138" cy="42" rx="16" ry="30" transform="rotate(12 138 42)"/>
+        <ellipse class="ein" cx="62" cy="46" rx="8" ry="18" transform="rotate(-12 62 46)"/><ellipse class="ein" cx="138" cy="46" rx="8" ry="18" transform="rotate(12 138 46)"/>
+        <ellipse class="bd" cx="100" cy="118" rx="74" ry="66"/><ellipse class="belly" cx="100" cy="140" rx="44" ry="34"/>
+        <circle class="cheek" cx="50" cy="122" r="11"/><circle class="cheek" cx="150" cy="122" r="11"/>
+        <g class="eo" fill="#3b2a20"><circle cx="75" cy="104" r="10"/><circle cx="125" cy="104" r="10"/><circle cx="78" cy="100" r="3.5" fill="#fff"/><circle cx="128" cy="100" r="3.5" fill="#fff"/></g>
+        <g class="ec" fill="none" stroke="#3b2a20" stroke-width="5" stroke-linecap="round"><path d="M63 106q12 8 24 0"/><path d="M113 106q12 8 24 0"/></g>
+        <g class="eh" fill="none" stroke="#3b2a20" stroke-width="5" stroke-linecap="round"><path d="M63 110q12-16 24 0"/><path d="M113 110q12-16 24 0"/></g>
+        <path class="ms" d="M88 128q12 12 24 0" fill="none" stroke="#3b2a20" stroke-width="5" stroke-linecap="round"/>
+        <path class="mb2" d="M82 124q18 28 36 0z" fill="#d6455d"/>
+        <ellipse class="mo" cx="100" cy="132" rx="6" ry="8" fill="#3b2a20"/>
+        <text class="zzz" x="150" y="52">z</text><path class="sweat" d="M150 70q10 14 0 22q-10-8 0-22z" fill="#7cc4ff"/>
+      </g></svg>
+    </div>
     <div class="big mono" id="swTime" style="margin:10px 0 16px">00:00<small style="font-size:.55em;color:var(--orange)">.00</small></div>
     <button class="btn mint" id="swGo" style="width:100%;font-size:1.5rem;padding:24px">▶ 시작</button>
     <div class="row" style="margin-top:8px"><button class="btn sky" id="swLap" disabled>🚩 랩</button><button class="btn ghost" id="swReset" disabled>↺ 초기화</button></div>
@@ -191,7 +248,7 @@ const mLabel = m => m ? `${m.e} ${m.n}` : '';
 /* ---------- 탭 ---------- */
 let tab = ['sw', 'brush', 'talk', 'relay', 'home'].includes(UI.tab) ? UI.tab : 'sw';
 function setTab(t) {
-  tab = t; UI.tab = t; save('fam-ui', UI);
+  tab = t; UI.tab = t; save('fam-ui', UI); document.body.dataset.tab = t;
   $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   $$('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
 }
@@ -395,6 +452,13 @@ const fmtH = ms => { const h = Math.floor(ms / 36e5); return (h ? pad(h) + ':' :
 function renderSW(full) {
   const t = swNow(), h = Math.floor(t / 36e5), r = t % 36e5;
   $('#swTime').innerHTML = `${h ? pad(h) + ':' : ''}${pad(Math.floor(r / 6e4))}:${pad(Math.floor(r / 1000) % 60)}<small style="font-size:.55em;color:var(--orange)">.${pad(Math.floor(r / 10) % 100)}</small>`;
+  const mood = SW.run ? 'run' : SW.el > 0 ? 'pause' : 'idle';
+  if (Date.now() > swHold) {
+    const msg = SW.run ? (t < 10000 ? '달려라 달려~! 🏃' : t < 60000 ? '잘하고 있어요! 👍' : t < 180000 ? '대단해요! 계속 가요 🔥' : '와… 엄청 오래 달리네요 😳') : SW.el > 0 ? '잠깐 쉬는 중~ 😮‍💨' : '나를 눌러서 시작해요! 👆';
+    if ($('#swBubble').textContent !== msg) { $('#swBubble').textContent = msg; pulse($('#swBubble')); }
+    $('#swMas').dataset.mood = mood;
+  }
+  if (SW.run) { const mk = Math.floor(t / 10000); if (mk > swMk) { swMk = mk; if (tab === 'sw') { swCheer(mk % 6 === 0 ? '1분 돌파! 대단해요 🎉' : '10초 돌파! ⚡', 1200); if (mk % 6 === 0) { burst(['🎉', '⭐', '✨'], 18, $('#swMas')); chime(); } } } }
   if (!full) return;
   $('#swGo').textContent = SW.run ? '⏸ 정지' : (SW.el > 0 ? '▶ 계속' : '▶ 시작');
   $('#swLap').disabled = !SW.run; $('#swReset').disabled = !SW.run && SW.el === 0;
@@ -407,8 +471,11 @@ function swToggle() {
   else { SW.t0 = Date.now(); SW.run = true; }
   swSave(); beep(SW.run ? 740 : 440, .1); renderSW(true);
 }
-function swLap() { if (!SW.run) return; SW.laps.push(swNow()); swSave(); beep(1000, .05, 'square'); renderSW(true); }
+function swLap() { if (!SW.run) return; SW.laps.push(swNow()); swSave(); swCheer('깃발 꽂았다! 🚩', 900); beep(1000, .05, 'square'); renderSW(true); }
 function swReset() { SW.run = false; SW.el = 0; SW.laps = []; swSave(); renderSW(true); }
+let swHold = 0, swMk = Math.floor(swNow() / 10000);
+function swCheer(text, ms) { swHold = Date.now() + ms; $('#swBubble').textContent = text; pulse($('#swBubble')); $('#swMas').dataset.mood = 'cheer'; }
+$('#swMas').onclick = swToggle;
 $('#swGo').onclick = swToggle; $('#swLap').onclick = swLap; $('#swReset').onclick = swReset;
 
 /* ---------- 메인 루프 / 키보드 ---------- */
