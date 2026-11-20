@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리 가족 시계</title>
+<style>
+  :root { --bg:#fff7ec; --ink:#4a3426; --muted:#9a8272; --orange:#ff8a3d; --mint:#3ec9a7; --sky:#5aa9ff; --pink:#ff7aa2; --card:#fff; --line:#f3e3d0; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin:0; min-height:100vh; color:var(--ink); background: radial-gradient(circle at 15% 0%, #ffe3c4, transparent 45%), radial-gradient(circle at 100% 20%, #ffd9e5, transparent 40%), var(--bg);
+    font-family: "Segoe UI","Malgun Gothic",system-ui,sans-serif; padding: 14px; display:flex; flex-direction:column; align-items:center; }
+  header { width:min(100%,520px); display:flex; justify-content:space-between; align-items:center; }
+  h1 { font-size:1.3rem; margin:0; }
+  #muteBtn { border:0; background:var(--card); width:40px; height:40px; border-radius:50%; font-size:1.1rem; cursor:pointer; box-shadow:0 2px 8px rgba(120,70,20,.12); }
+  nav { width:min(100%,520px); display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin:12px 0; }
+  nav button b { display:block; font-size:1.5rem; line-height:1.2; }
+  details.opt { margin-top:14px; text-align:left; } details.opt summary { cursor:pointer; color:var(--muted); font-weight:700; padding:6px 0; }
+  nav button { border:0; padding:8px 0; border-radius:14px; background:rgba(255,255,255,.7); color:var(--muted); font-weight:700; font-size:.78rem; cursor:pointer; }
+  nav button.on { background:var(--orange); color:#fff; box-shadow:0 4px 12px rgba(255,138,61,.4); }
+  main { width:min(100%,520px); }
+  .pane { display:none; } .pane.on { display:block; }
+  .card { background:var(--card); border-radius:22px; padding:18px; margin-bottom:12px; box-shadow:0 6px 20px rgba(120,70,20,.08); }
+  .card h2 { font-size:.95rem; margin:0 0 10px; color:var(--muted); }
+  .center { text-align:center; }
+  .big { font-size:clamp(2.4rem,13vw,3.6rem); font-weight:800; line-height:1.1; }
+  .mono { font-variant-numeric:tabular-nums; }
+  .sub { color:var(--muted); font-size:.85rem; margin-top:6px; }
+  input,select { font:inherit; padding:9px 10px; border:2px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); }
+  .btn { border:0; border-radius:16px; padding:14px 18px; font-size:1rem; font-weight:800; cursor:pointer; color:#fff; background:var(--orange); transition:transform .1s, filter .15s; }
+  .btn:hover:not(:disabled) { filter:brightness(1.08); } .btn:active:not(:disabled) { transform:scale(.96); }
+  .btn.mint { background:var(--mint); } .btn.sky { background:var(--sky); } .btn.ghost { background:#f6ece0; color:var(--ink); }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .row > .btn { flex:1; }
+  .mem { display:flex; gap:6px; margin-bottom:8px; }
+  .mem .emo { border:2px solid var(--line); background:#fff; border-radius:12px; width:46px; font-size:1.4rem; cursor:pointer; }
+  .mem input { flex:1; min-width:0; }
+  .mem .del { border:0; background:#f6ece0; border-radius:12px; width:40px; cursor:pointer; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .chip { border:2px solid var(--line); background:#fff; border-radius:999px; padding:6px 12px; font-weight:700; cursor:pointer; color:var(--ink); }
+  .chip.on { background:#ffe9d6; border-color:var(--orange); }
+  .board { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; }
+  .kid { background:#fff6ec; border-radius:16px; padding:10px; text-align:center; }
+  .kid .e { font-size:2rem; } .kid .bar { height:8px; background:#f3e3d0; border-radius:99px; margin-top:6px; overflow:hidden; }
+  .kid .bar i { display:block; height:100%; background:linear-gradient(90deg,var(--orange),var(--pink)); }
+  .ring { --p:0; width:min(68vw,250px); aspect-ratio:1; border-radius:50%; margin:6px auto 14px; display:grid; place-items:center;
+    background:conic-gradient(var(--orange) calc(var(--p) * 1%), #ffe8d2 0); }
+  .ring > div { width:86%; aspect-ratio:1; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  svg.mouth { width:min(78vw,300px); display:block; margin:0 auto; }
+  .tooth-track { fill:none; stroke:#f6e6d4; stroke-width:24; }
+  .tooth-prog { fill:none; stroke:var(--mint); stroke-width:24; stroke-linecap:round; }
+  .tooth-active { stroke:var(--sky); }
+  .mascot { font-size:3rem; display:inline-block; }
+  .running .mascot { animation: wig .35s infinite alternate ease-in-out; }
+  @keyframes wig { from { transform:translateX(-14px) rotate(-14deg); } to { transform:translateX(14px) rotate(14deg); } }
+  .qcard { background:#fff6ec; border:2px dashed var(--orange); border-radius:16px; padding:12px; margin:8px 0 12px; font-weight:700; }
+  .lane { display:flex; gap:6px; align-items:center; justify-content:center; margin:10px 0; flex-wrap:wrap; }
+  .lane .r { width:56px; padding:8px 0; border-radius:16px; background:#fff6ec; text-align:center; font-size:1.5rem; opacity:.55; }
+  .lane .r.cur { opacity:1; background:#ffe9d6; transform:translateY(-6px) scale(1.1); box-shadow:0 6px 14px rgba(255,138,61,.35); }
+  .lane .r.done { opacity:1; background:#d9f6ec; }
+  .list { list-style:none; margin:10px 0 0; padding:0; }
+  .list li { display:flex; justify-content:space-between; padding:8px 4px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  .pulse { animation:pul .5s ease-out; } @keyframes pul { 30% { transform:scale(1.05); } }
+  .fly { position:fixed; font-size:1.6rem; pointer-events:none; animation:fly 1.5s ease-out forwards; z-index:9; }
+  @keyframes fly { to { transform:translate(var(--dx),var(--dy)) rotate(var(--rot)); opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; } }
+</style>
+</head>
+<body>
+<header><h1>🏠 우리 가족 시계</h1><button id="muteBtn" aria-label="소리 켜기/끄기">🔊</button></header>
+<nav id="tabs">
+  <button data-tab="sw"><b>⏱</b>스탑워치</button>
+  <button data-tab="brush"><b>🪥</b>양치</button>
+  <button data-tab="talk"><b>🍽️</b>식탁수다</button>
+  <button data-tab="relay"><b>🏃</b>릴레이</button>
+  <button data-tab="home"><b>⚙️</b>가족</button>
+</nav>
+
+<main>
+<!-- 우리집 -->
+<section id="p-home" class="pane on">
+  <div class="card center">
+    <h2 id="cLabel">우리 가족이 된 지</h2>
+    <div class="big mono" id="cDays">🏠</div>
+    <div class="mono" style="font-size:1.4rem;font-weight:700;margin-top:4px" id="cTime">--:--:--</div>
+    <div class="sub" id="cSub">아래에 가족이 된 날을 입력해 보세요</div>
+    <div style="margin-top:12px"><label class="sub">가족이 된 날 </label><input type="date" id="since"></div>
+  </div>
+  <div class="card"><h2>가족 구성원 (최대 6명)</h2><div id="memEditor"></div><button class="btn ghost" id="addMem" style="width:100%">＋ 구성원 추가</button></div>
+  <div class="card"><h2>⭐ 스티커판 (10개 모이면 소원권 🎁)</h2><div class="board" id="board"></div></div>
+</section>
+
+<!-- 양치 -->
+<section id="p-brush" class="pane">
+  <div class="card center" id="brushCard">
+    <h2>누가 양치할까요?</h2><div class="chips" id="brushChips"></div>
+    <svg class="mouth" viewBox="0 0 300 300" id="mouth"></svg>
+    <div style="margin-top:-190px;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div class="mascot">🪥</div>
+      <div class="big mono" style="font-size:2.4rem" id="bTime">02:00</div>
+      <div style="font-weight:800" id="bZone">준비되면 시작!</div>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn mint" id="bStart">🪥 시작</button><button class="btn ghost" id="bReset">↺ 처음부터</button></div>
+    <div class="sub" id="bMsg">2분 동안 4구역을 30초씩 닦아요 (스페이스: 시작/일시정지)</div>
+  </div>
+</section>
+
+<!-- 식탁수다 -->
+<section id="p-talk" class="pane">
+  <div class="card center" id="talkCard">
+    <h2>식탁 수다 · 돌아가며 한마디씩</h2>
+    <div id="talkStage"></div>
+    <details class="opt"><summary>⚙ 참가자·시간 바꾸기</summary>
+      <div class="chips" id="talkChips" style="margin-top:10px"></div>
+      <div class="row"><label class="sub">1인당 시간</label>
+      <select id="tkLimit"><option value="30">30초</option><option value="60" selected>1분</option><option value="90">1분 30초</option></select></div>
+    </details>
+  </div>
+</section>
+
+<!-- 릴레이 -->
+<section id="p-relay" class="pane">
+  <div class="card center" id="relayCard">
+    <h2>가족 릴레이 · 바통을 이어 달려요</h2>
+    <details class="opt"><summary>⚙ 과제·참가자 바꾸기</summary><div class="chips" id="relayChips" style="margin-top:10px"></div>
+    <div class="row" style="margin-bottom:6px"><label class="sub">과제</label>
+      <select id="rlTask"><option>장난감 정리</option><option>신발장 정리</option><option>빨래 개기</option><option>식탁 차리기</option><option>방 청소</option></select></div></details>
+    <div class="lane" id="lane"></div>
+    <div class="big mono" id="rTotal">00:00.00</div>
+    <div class="sub" id="rBest"></div>
+    <div class="row" style="margin-top:12px"><button class="btn sky" id="rGo" style="font-size:1.2rem;padding:18px">🏁 출발!</button><button class="btn ghost" id="rCancel" style="flex:.4">그만</button></div>
+    <ul class="list" id="rSplits"></ul>
+  </div>
+</section>
+
+<!-- 기본 스탑워치 -->
+<section id="p-sw" class="pane">
+  <div class="card center">
+    <h2>기본 스탑워치</h2>
+    <div class="big mono" id="swTime" style="margin:10px 0 16px">00:00<small style="font-size:.55em;color:var(--orange)">.00</small></div>
+    <button class="btn mint" id="swGo" style="width:100%;font-size:1.5rem;padding:24px">▶ 시작</button>
+    <div class="row" style="margin-top:8px"><button class="btn sky" id="swLap" disabled>🚩 랩</button><button class="btn ghost" id="swReset" disabled>↺ 초기화</button></div>
+    <ul class="list" id="swLaps"></ul>
+    <div class="sub">스페이스: 시작/정지 · L: 랩 · R: 초기화</div>
+  </div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const load = (k, d) => { try { return Object.assign(d, JSON.parse(localStorage.getItem(k)) || {}); } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const fmt = ms => `${pad(Math.floor(ms / 60000))}:${pad(Math.floor(ms / 1000) % 60)}.${pad(Math.floor(ms / 10) % 100)}`;
+const uid = () => Math.random().toString(36).slice(2, 8);
+
+/* ---------- 저장 데이터 ---------- */
+const F = load('fam-info', { since: '', members: [{ id: uid(), n: '엄마', e: '👩' }, { id: uid(), n: '아빠', e: '👨' }, { id: uid(), n: '첫째', e: '🧒' }] });
+const STK = load('fam-stk', { c: {} });      // 구성원 id → 스티커 수
+const BEST = load('fam-best', { t: {} });    // 과제 → 최고 기록(ms)
+const UI = load('fam-ui', { tab: 'sw', muted: false });
+const EMOJIS = ['👩', '👨', '🧒', '👧', '👦', '👶', '👵', '👴', '🐶', '🐱', '🐰'];
+
+/* ---------- 소리 / 이펙트 ---------- */
+let audio = null;
+function beep(f = 700, d = .15, type = 'triangle') {
+  if (UI.muted) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type; o.frequency.value = f; g.gain.value = .12;
+    g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + d);
+    o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + d);
+  } catch (e) {}
+}
+const chime = () => { beep(784, .18); setTimeout(() => beep(988, .18), 140); setTimeout(() => beep(1318, .3), 280); };
+function burst(items, n = 16, el) {
+  const r = (el || document.body).getBoundingClientRect();
+  const x = el ? r.left + r.width / 2 : innerWidth / 2, y = el ? r.top + Math.min(r.height / 2, 200) : innerHeight / 2;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span'); s.className = 'fly'; s.textContent = items[i % items.length];
+    s.style.cssText = `left:${x}px;top:${y}px;--dx:${(Math.random() - .5) * 320}px;--dy:${-80 - Math.random() * 260}px;--rot:${(Math.random() - .5) * 90}deg`;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 1500);
+  }
+}
+const pulse = el => { el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); };
+const member = id => F.members.find(m => m.id === id);
+const mLabel = m => m ? `${m.e} ${m.n}` : '';
+
+/* ---------- 탭 ---------- */
+let tab = ['sw', 'brush', 'talk', 'relay', 'home'].includes(UI.tab) ? UI.tab : 'sw';
+function setTab(t) {
+  tab = t; UI.tab = t; save('fam-ui', UI);
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $$('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+}
+$$('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+$('#muteBtn').textContent = UI.muted ? '🔇' : '🔊';
+$('#muteBtn').onclick = () => { UI.muted = !UI.muted; save('fam-ui', UI); $('#muteBtn').textContent = UI.muted ? '🔇' : '🔊'; beep(600, .08); };
+
+/* ---------- 구성원 / 선택 칩 ---------- */
+const sel = { brush: null, talk: new Set(), relay: new Set() };
+function syncSel() {
+  const ids = F.members.map(m => m.id);
+  if (!ids.includes(sel.brush)) sel.brush = ids[0] || null;
+  ['talk', 'relay'].forEach(k => {
+    [...sel[k]].forEach(id => { if (!ids.includes(id)) sel[k].delete(id); });
+    if (!sel[k].size) ids.forEach(id => sel[k].add(id));
+  });
+}
+function renderEditor() {
+  const box = $('#memEditor'); box.innerHTML = '';
+  F.members.forEach(m => {
+    const row = document.createElement('div'); row.className = 'mem';
+    const eb = document.createElement('button'); eb.className = 'emo'; eb.textContent = m.e; eb.title = '이모지 바꾸기';
+    eb.onclick = () => { m.e = EMOJIS[(EMOJIS.indexOf(m.e) + 1) % EMOJIS.length]; eb.textContent = m.e; save('fam-info', F); renderChips(); renderBoard(); };
+    const inp = document.createElement('input'); inp.value = m.n; inp.maxLength = 6; inp.setAttribute('aria-label', '이름');
+    inp.oninput = () => { m.n = inp.value; save('fam-info', F); renderChips(); renderBoard(); };
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '✕'; del.title = '삭제';
+    del.onclick = () => { if (F.members.length <= 1) return; F.members = F.members.filter(x => x !== m); save('fam-info', F); syncSel(); renderEditor(); renderChips(); renderBoard(); };
+    row.append(eb, inp, del); box.appendChild(row);
+  });
+  $('#addMem').disabled = F.members.length >= 6;
+}
+$('#addMem').onclick = () => {
+  if (F.members.length >= 6) return;
+  const m = { id: uid(), n: '새 식구', e: EMOJIS[F.members.length % EMOJIS.length] };
+  F.members.push(m); sel.talk.add(m.id); sel.relay.add(m.id); save('fam-info', F);
+  syncSel(); renderEditor(); renderChips(); renderBoard();
+};
+function renderBoard() {
+  $('#board').innerHTML = F.members.map(m => {
+    const c = STK.c[m.id] || 0, k = c % 10, gift = Math.floor(c / 10);
+    return `<div class="kid"><div class="e">${m.e}</div><b>${esc(m.n)}</b><div>⭐ ${c}${gift ? ' · 🎁×' + gift : ''}</div><div class="bar"><i style="width:${k * 10}%"></i></div></div>`;
+  }).join('');
+}
+function addSticker(id) {
+  STK.c[id] = (STK.c[id] || 0) + 1; save('fam-stk', STK); renderBoard();
+  if (STK.c[id] % 10 === 0) { setTimeout(() => { burst(['🎁', '🎉', '⭐', '✨'], 24); chime(); }, 600); return true; }
+  return false;
+}
+function renderChips() {
+  const mk = (box, isSel, toggle) => {
+    box.innerHTML = '';
+    F.members.forEach(m => {
+      const b = document.createElement('button'); b.className = 'chip' + (isSel(m.id) ? ' on' : ''); b.textContent = mLabel(m);
+      b.onclick = () => toggle(m.id); box.appendChild(b);
+    });
+  };
+  mk($('#brushChips'), id => sel.brush === id, id => { sel.brush = id; renderChips(); });
+  const multi = k => id => { sel[k].has(id) ? (sel[k].size > 1 && sel[k].delete(id)) : sel[k].add(id); renderChips(); if (k === 'relay') drawLane(); };
+  mk($('#talkChips'), id => sel.talk.has(id), multi('talk'));
+  mk($('#relayChips'), id => sel.relay.has(id), multi('relay'));
+}
+
+/* ---------- 우리집 시계 ---------- */
+$('#since').value = F.since || '';
+$('#since').onchange = e => { F.since = e.target.value; save('fam-info', F); };
+function tickHome() {
+  const total = F.members.reduce((a, m) => a + (STK.c[m.id] || 0), 0);
+  if (!F.since) { $('#cDays').textContent = '🏠'; $('#cTime').textContent = '--:--:--'; $('#cSub').textContent = '아래에 가족이 된 날을 입력해 보세요'; return; }
+  const start = new Date(F.since + 'T00:00:00').getTime(); let d = Date.now() - start; const before = d < 0; d = Math.abs(d);
+  const days = Math.floor(d / 864e5), r = d % 864e5;
+  $('#cLabel').textContent = before ? '우리 가족이 되기까지' : '우리 가족이 된 지';
+  $('#cDays').textContent = (before ? 'D-' : 'D+') + days;
+  $('#cTime').innerHTML = `${pad(Math.floor(r / 36e5))}:${pad(Math.floor(r / 6e4) % 60)}:${pad(Math.floor(r / 1000) % 60)}<small style="font-size:.6em;color:var(--orange)">.${pad(Math.floor(r / 10) % 100)}</small>`;
+  $('#cSub').textContent = `지금까지 모은 가족 스티커 ⭐ ${total}개`;
+}
+
+/* ---------- 🪥 양치 ---------- */
+const ZONES = ['오른쪽 윗니', '왼쪽 윗니', '왼쪽 아랫니', '오른쪽 아랫니'];
+const ZONE_TIP = ['쓱싹쓱싹 안쪽도 바깥쪽도!', '작은 원을 그리며 살살~', '잇몸 쪽에서 위로 쓸어올려요', '마지막 구역! 조금만 더!'];
+const BR = { run: false, el: 0, total: 120000, done: false };
+const arcP = (a0, a1, r = 115) => {
+  const p = a => [150 + r * Math.cos(a * Math.PI / 180), 150 + r * Math.sin(a * Math.PI / 180)];
+  const [x0, y0] = p(a0), [x1, y1] = p(a1); return `M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+};
+$('#mouth').innerHTML = ZONES.map((_, i) => `<path class="tooth-track" d="${arcP(-90 + 90 * i + 4, -90 + 90 * i + 86)}"/>`).join('') +
+  ZONES.map((_, i) => `<path class="tooth-prog" id="tp${i}" d=""/>`).join('');
+function renderBrush() {
+  const left = Math.max(0, BR.total - BR.el), zi = Math.min(3, Math.floor(BR.el / 30000));
+  ZONES.forEach((_, i) => {
+    const fr = Math.max(0, Math.min(1, (BR.el - i * 30000) / 30000)), a0 = -90 + 90 * i + 4;
+    const p = $('#tp' + i); p.setAttribute('d', fr > .01 ? arcP(a0, a0 + 82 * fr) : '');
+    p.classList.toggle('tooth-active', BR.run && i === zi);
+  });
+  $('#bTime').textContent = `${pad(Math.floor(left / 60000))}:${pad(Math.ceil(left / 1000) % 60 === 0 && left > 0 ? 0 : Math.ceil(left / 1000) % 60)}`;
+  $('#bZone').textContent = BR.done ? '🎉 양치 끝! 최고!' : (BR.run || BR.el > 0) ? ZONES[zi] : '준비되면 시작!';
+  if (!BR.done && (BR.run || BR.el > 0)) $('#bMsg').textContent = ZONE_TIP[zi];
+  $('#brushCard').classList.toggle('running', BR.run);
+  $('#bStart').textContent = BR.run ? '⏸ 일시정지' : (BR.el > 0 && !BR.done ? '▶ 계속' : '🪥 시작');
+}
+function brushToggle() {
+  if (BR.done) brushReset();
+  BR.run = !BR.run; beep(BR.run ? 740 : 440, .12); renderBrush();
+}
+function brushReset() { BR.run = false; BR.el = 0; BR.done = false; $('#bMsg').textContent = '2분 동안 4구역을 30초씩 닦아요 (스페이스: 시작/일시정지)'; renderBrush(); }
+function brushFinish() {
+  BR.run = false; BR.done = true; BR.el = BR.total;
+  const m = member(sel.brush), gift = m ? addSticker(m.id) : false;
+  $('#bMsg').textContent = m ? `${mLabel(m)}에게 스티커 ⭐ 1개!${gift ? ' 🎁 소원권 획득!' : ''}` : '';
+  burst(['⭐', '✨', '🦷', '🪥'], 18, $('#brushCard')); chime(); renderBrush();
+}
+$('#bStart').onclick = brushToggle; $('#bReset').onclick = brushReset;
+
+/* ---------- 🍽️ 식탁수다 ---------- */
+const QS = ['오늘 제일 웃겼던 일은?', '오늘 먹은 것 중 최고의 메뉴는?', '오늘 누군가에게 고마웠던 순간은?', '내일 가장 기대되는 일은?', '오늘 새로 알게 된 사실은?', '지금 가족에게 해주고 싶은 말은?', '오늘의 기분을 날씨로 말하면?', '요즘 푹 빠진 것은?', '우리 가족이 같이 가고 싶은 곳은?', '오늘 가장 힘들었던 일은? (다들 토닥토닥)'];
+const TK = { phase: 'idle', order: [], i: 0, limit: 60000, el: 0, used: {}, q: '' };
+const rq = () => QS[Math.floor(Math.random() * QS.length)];
+function talkStart() {
+  TK.order = F.members.filter(m => sel.talk.has(m.id)).map(m => m.id);
+  TK.limit = +$('#tkLimit').value * 1000; TK.phase = 'run'; TK.i = 0; TK.el = 0; TK.used = {}; TK.q = rq(); beep(700); renderTalk();
+}
+function talkNext(auto) {
+  TK.used[TK.order[TK.i]] = Math.min(TK.el, TK.limit); beep(auto ? 520 : 880, .25); TK.i++;
+  if (TK.i >= TK.order.length) { TK.phase = 'done'; chime(); burst(['👑', '🎉', '💬'], 18, $('#talkCard')); }
+  else { TK.el = 0; TK.q = rq(); pulse($('#talkStage')); }
+  renderTalk();
+}
+function renderTalk() {
+  const st = $('#talkStage');
+  if (TK.phase === 'idle') { st.innerHTML = `<button class="btn" id="tkGo" style="width:100%;font-size:1.15rem">🍽️ 수다 시작!</button><div class="sub">한 명씩 돌아가며 이야기해요. 시간이 끝나면 다음 사람!</div>`; $('#tkGo').onclick = talkStart; return; }
+  if (TK.phase === 'done') {
+    const rows = TK.order.map(id => ({ m: member(id), t: TK.used[id] || 0 })).filter(r => r.m).sort((a, b) => b.t - a.t);
+    const king = rows[0];
+    st.innerHTML = `<div class="big" style="font-size:2.4rem">👑 ${king ? esc(mLabel(king.m)) : ''}</div><div class="sub">오늘의 수다왕! (${king ? Math.round(king.t / 1000) : 0}초)</div>
+      <ul class="list">${rows.map(r => `<li><span>${esc(mLabel(r.m))}</span><span>${Math.round(r.t / 1000)}초</span></li>`).join('')}</ul>
+      <button class="btn" id="tkAgain" style="width:100%;margin-top:12px">↺ 다시 하기</button>`;
+    $('#tkAgain').onclick = () => { TK.phase = 'idle'; renderTalk(); }; return;
+  }
+  const m = member(TK.order[TK.i]);
+  st.innerHTML = `<div class="ring" id="tkRing"><div><div style="font-size:3rem">${m ? m.e : ''}</div><div style="font-weight:800">${m ? esc(m.n) : ''}의 차례</div><div class="big mono" style="font-size:2.2rem" id="tkLeft"></div></div></div>
+    <div class="qcard" id="tkQ">💬 ${esc(TK.q)}</div>
+    <div class="row"><button class="btn mint" id="tkNext">다음 사람 ▶</button><button class="btn ghost" id="tkQBtn">🔄 질문</button><button class="btn ghost" id="tkStop" style="flex:.5">■</button></div>
+    <div class="sub">${TK.i + 1} / ${TK.order.length}번째</div>`;
+  $('#tkNext').onclick = () => talkNext(false);
+  $('#tkQBtn').onclick = () => { TK.q = rq(); $('#tkQ').textContent = '💬 ' + TK.q; };
+  $('#tkStop').onclick = () => { TK.phase = 'idle'; renderTalk(); };
+  tickTalk();
+}
+function tickTalk() {
+  const ring = $('#tkRing'); if (!ring) return;
+  ring.style.setProperty('--p', Math.min(100, TK.el / TK.limit * 100));
+  $('#tkLeft').textContent = Math.max(0, Math.ceil((TK.limit - TK.el) / 1000)) + '초';
+}
+
+/* ---------- 🏃 릴레이 ---------- */
+const RL = { phase: 'idle', order: [], i: 0, t0: 0, seg: 0, splits: [], task: '' };
+const rlOrder = () => F.members.filter(m => sel.relay.has(m.id));
+function drawLane() {
+  const order = RL.phase === 'run' || RL.phase === 'done' ? RL.order.map(member).filter(Boolean) : rlOrder();
+  $('#lane').innerHTML = order.map((m, i) => `<div class="r ${RL.phase !== 'idle' && i < RL.i ? 'done' : ''} ${RL.phase === 'run' && i === RL.i ? 'cur' : ''}">${m.e}${RL.phase === 'run' && i === RL.i ? '<div style="font-size:.9rem">🏃</div>' : ''}</div>`).join('<span>→</span>') + '<span>🏁</span>';
+  const task = $('#rlTask').value, b = BEST.t[task];
+  $('#rBest').textContent = b ? `🏆 "${task}" 가족 최고 기록 ${fmt(b)}` : `"${task}" 아직 기록이 없어요. 첫 기록에 도전!`;
+}
+function relayGo() {
+  const now = performance.now();
+  if (RL.phase === 'run') {
+    const split = now - RL.seg; RL.splits.push(split); RL.i++; RL.seg = now; beep(900, .1); buzz();
+    if (RL.i >= RL.order.length) {
+      RL.phase = 'done'; const total = RL.splits.reduce((a, b) => a + b, 0);
+      const rec = !BEST.t[RL.task] || total < BEST.t[RL.task];
+      if (rec) { BEST.t[RL.task] = total; save('fam-best', BEST); }
+      RL.rec = rec; chime(); burst(rec ? ['🏆', '🎉', '✨'] : ['🎉', '👏'], 22, $('#relayCard'));
+    }
+  } else {
+    const order = rlOrder(); if (!order.length) return;
+    RL.order = order.map(m => m.id); RL.i = 0; RL.splits = []; RL.t0 = RL.seg = now; RL.phase = 'run'; RL.task = $('#rlTask').value; RL.rec = false; beep(660, .15);
+  }
+  renderRelay();
+}
+function buzz() { try { navigator.vibrate && navigator.vibrate(30); } catch (e) {} }
+function renderRelay() {
+  drawLane();
+  $('#rGo').textContent = RL.phase === 'run' ? `🏃 바통 터치! (${RL.i + 1}/${RL.order.length})` : '🏁 출발!';
+  $('#rCancel').disabled = RL.phase === 'idle';
+  $('#rlTask').disabled = RL.phase === 'run';
+  $('#rSplits').innerHTML = RL.splits.map((s, i) => `<li><span>${esc(mLabel(member(RL.order[i])))}</span><span>${fmt(s)}</span></li>`).join('');
+  if (RL.phase === 'done') $('#rBest').textContent = RL.rec ? '🏆 신기록 달성!! 가족 최고!' : `완주! 최고 기록 ${fmt(BEST.t[RL.task])}`;
+}
+function tickRelay() {
+  if (RL.phase === 'run') $('#rTotal').textContent = fmt(performance.now() - RL.t0);
+  else if (RL.phase === 'done') $('#rTotal').textContent = fmt(RL.splits.reduce((a, b) => a + b, 0));
+}
+$('#rGo').onclick = relayGo;
+$('#rCancel').onclick = () => { RL.phase = 'idle'; RL.splits = []; $('#rTotal').textContent = '00:00.00'; renderRelay(); };
+$('#rlTask').onchange = drawLane;
+
+/* ---------- ⏱ 기본 스탑워치 ---------- */
+const SW = load('fam-sw', { run: false, el: 0, t0: 0, laps: [] });
+const swSave = () => save('fam-sw', SW);
+const swNow = () => SW.el + (SW.run ? Date.now() - SW.t0 : 0);
+const fmtH = ms => { const h = Math.floor(ms / 36e5); return (h ? pad(h) + ':' : '') + fmt(ms % 36e5); };
+function renderSW(full) {
+  const t = swNow(), h = Math.floor(t / 36e5), r = t % 36e5;
+  $('#swTime').innerHTML = `${h ? pad(h) + ':' : ''}${pad(Math.floor(r / 6e4))}:${pad(Math.floor(r / 1000) % 60)}<small style="font-size:.55em;color:var(--orange)">.${pad(Math.floor(r / 10) % 100)}</small>`;
+  if (!full) return;
+  $('#swGo').textContent = SW.run ? '⏸ 정지' : (SW.el > 0 ? '▶ 계속' : '▶ 시작');
+  $('#swLap').disabled = !SW.run; $('#swReset').disabled = !SW.run && SW.el === 0;
+  const splits = SW.laps.map((x, i) => x - (i ? SW.laps[i - 1] : 0));
+  $('#swLaps').innerHTML = SW.laps.map((_, i) => i).reverse().map(i =>
+    `<li><span>랩 ${i + 1}</span><b>+${fmtH(splits[i])}</b><span style="color:var(--muted)">${fmtH(SW.laps[i])}</span></li>`).join('');
+}
+function swToggle() {
+  if (SW.run) { SW.el += Date.now() - SW.t0; SW.run = false; }
+  else { SW.t0 = Date.now(); SW.run = true; }
+  swSave(); beep(SW.run ? 740 : 440, .1); renderSW(true);
+}
+function swLap() { if (!SW.run) return; SW.laps.push(swNow()); swSave(); beep(1000, .05, 'square'); renderSW(true); }
+function swReset() { SW.run = false; SW.el = 0; SW.laps = []; swSave(); renderSW(true); }
+$('#swGo').onclick = swToggle; $('#swLap').onclick = swLap; $('#swReset').onclick = swReset;
+
+/* ---------- 메인 루프 / 키보드 ---------- */
+let last = performance.now();
+setInterval(() => {
+  const t = performance.now(), dt = t - last; last = t;
+  if (BR.run) { BR.el += dt; if (BR.el >= BR.total) brushFinish(); }
+  if (TK.phase === 'run') { TK.el += dt; if (TK.el >= TK.limit) talkNext(true); }
+  if (tab === 'home') tickHome();
+  if (tab === 'brush') renderBrush();
+  if (tab === 'talk') tickTalk();
+  if (tab === 'relay') tickRelay();
+  if (tab === 'sw') renderSW(false);
+}, 33);
+const typing = e => /INPUT|SELECT|TEXTAREA/.test(e.target.tagName);
+document.addEventListener('keydown', e => {
+  if (typing(e)) return;
+  if (tab === 'sw' && !e.repeat && (e.key === 'l' || e.key === 'L')) { swLap(); return; }
+  if (tab === 'sw' && !e.repeat && (e.key === 'r' || e.key === 'R')) { swReset(); return; }
+  if (e.code !== 'Space') return;
+  e.preventDefault(); if (e.repeat) return;
+  if (tab === 'sw') swToggle();
+  if (tab === 'brush') brushToggle();
+  else if (tab === 'relay') relayGo();
+  else if (tab === 'talk') { TK.phase === 'run' ? talkNext(false) : TK.phase === 'idle' ? talkStart() : 0; }
+});
+document.addEventListener('keyup', e => { if (e.code === 'Space' && !typing(e)) e.preventDefault(); });
+
+syncSel(); renderEditor(); renderBoard(); renderChips(); renderBrush(); renderTalk(); renderRelay(); renderSW(true); setTab(tab);
+</script>
+</body>
+</html>
